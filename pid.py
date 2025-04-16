@@ -38,11 +38,31 @@ def run_controller(kp, kd, setpoint, noise, filtered, world: World):
 
     # you can set the variables that should stay accross control loop here
 
+    prev_error_x = 0.0
+    prev_error_y = 0.0
+    #pd_controller.prev_error_x = 0
+    #pd_controller.prev_error_y = 0
+
     def pd_controller(x, y, kp, kd, setpoint):
         """Implement a PD controller, you can access the setpoint via setpoint.x and setpoint.y
         the plate is small around 0.1 to 0.2 meters. You will have to calculate the error and change in error and 
         use those to calculate the angle to apply to the plate."""
-        return 0.0, 0.0
+        error_x = setpoint.x - x
+        error_y = setpoint.y - y
+
+        d_error_x = (error_x - pd_controller.prev_error_x) / 0.01
+        d_error_y = (error_y - pd_controller.prev_error_y) / 0.01
+
+        angle_x = kp * error_x + kd * d_error_x
+        angle_y = kp * error_y + kd * d_error_y
+
+        pd_controller.prev_error_x = error_x
+        pd_controller.prev_error_y = error_y
+
+        return angle_x, angle_y
+    
+    pd_controller.prev_error_x = prev_error_x
+    pd_controller.prev_error_y = prev_error_y
 
 
     def filter_val(val):
@@ -101,4 +121,12 @@ if __name__ == "__main__":
     cmd_args = parse_args()
     world = run_simulation()
     run_controller(**vars(cmd_args), world=world)
-    time.sleep(10000)
+    
+    #time.sleep(10000)
+
+    try:
+        while True:          # keep main thread alive
+            time.sleep(1)    # but make it interruptible
+    except KeyboardInterrupt:
+        print("Exiting…")
+        p.disconnect()
