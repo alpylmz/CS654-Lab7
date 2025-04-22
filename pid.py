@@ -20,8 +20,8 @@ class World:
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("--setpoint", type=float, nargs=2, default=(0.0,0.0))
-    parser.add_argument("--kp", type=float, default=0.0) # set these values to tune the PD controller
-    parser.add_argument("--kd", type=float, default=0.0) # set these values to tune the PD controller
+    parser.add_argument("--kp", type=float, default=0.65) # set these values to tune the PD controller
+    parser.add_argument("--kd", type=float, default=0.2) # set these values to tune the PD controller
     parser.add_argument("--noise", action="store_true", help="Add noise to the measurements")
     parser.add_argument("--filtered", action="store_true", help="filter the measurements")
     cmd_args = parser.parse_args()
