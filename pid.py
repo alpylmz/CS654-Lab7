@@ -20,8 +20,8 @@ class World:
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("--setpoint", type=float, nargs=2, default=(0.0,0.0))
-    parser.add_argument("--kp", type=float, default=0.0) # set these values to tune the PD controller
-    parser.add_argument("--kd", type=float, default=0.0) # set these values to tune the PD controller
+    parser.add_argument("--kp", type=float, default=0.65) # set these values to tune the PD controller
+    parser.add_argument("--kd", type=float, default=0.2) # set these values to tune the PD controller
     parser.add_argument("--noise", action="store_true", help="Add noise to the measurements")
     parser.add_argument("--filtered", action="store_true", help="filter the measurements")
     cmd_args = parser.parse_args()
@@ -65,10 +65,26 @@ def run_controller(kp, kd, setpoint, noise, filtered, world: World):
     pd_controller.prev_error_y = prev_error_y
 
 
-    def filter_val(val):
-        """Implement a filter here, you can use scipy.signal.butter to compute the filter coefficients and then scipy.signal.lfilter to apply the filter.but we recommend you implement it yourself instead of using lfilter because you'll have to do that on the real system later.
-        Take a look at the butterworth example written by Renato for inspiration."""
-        pass
+    def filter_val(val, axis):
+        """
+        A simple low-pass filter.
+        Uses the formula: filtered = alpha * new_value + (1 - alpha) * previous_filtered_value.
+        The parameter `axis` should be either 'x' or 'y'.
+        """
+        alpha = 0.1
+        if axis == 'x':
+            if not hasattr(filter_val, "prev_x"):
+                filter_val.prev_x = val
+            filtered = alpha * val + (1 - alpha) * filter_val.prev_x
+            filter_val.prev_x = filtered
+        elif axis == 'y':
+            if not hasattr(filter_val, "prev_y"):
+                filter_val.prev_y = val
+            filtered = alpha * val + (1 - alpha) * filter_val.prev_y
+            filter_val.prev_y = filtered
+        else:
+            filtered = val
+        return filtered
 
     def every_10ms(i: int, t: float):
         '''This function is called every ms and performs the following:
@@ -82,8 +98,8 @@ def run_controller(kp, kd, setpoint, noise, filtered, world: World):
             y += utils.noise(t, seed = 43) # so that the noise on y is different than the one on x
         
         if filtered:
-            x = filter_val(x)
-            y = filter_val(y)
+            x = filter_val(x, 'x')
+            y = filter_val(y, 'y')
 
         (angle_x, angle_y) = pd_controller(x, y, kp, kd, setpoint)
         set_plate_angles(angle_x, angle_y)
