@@ -65,26 +65,23 @@ def run_controller(kp, kd, setpoint, noise, filtered, world: World):
     pd_controller.prev_error_y = prev_error_y
 
 
-    def filter_val(val, axis):
+   def filter_val(val, axis):
         """
         A simple low-pass filter.
         Uses the formula: filtered = alpha * new_value + (1 - alpha) * previous_filtered_value.
         The parameter `axis` should be either 'x' or 'y'.
         """
-        alpha = 0.1
-        if axis == 'x':
-            if not hasattr(filter_val, "prev_x"):
-                filter_val.prev_x = val
-            filtered = alpha * val + (1 - alpha) * filter_val.prev_x
-            filter_val.prev_x = filtered
-        elif axis == 'y':
-            if not hasattr(filter_val, "prev_y"):
-                filter_val.prev_y = val
-            filtered = alpha * val + (1 - alpha) * filter_val.prev_y
-            filter_val.prev_y = filtered
-        else:
-            filtered = val
-        return filtered
+        N_ord = 5
+
+        f_cutoff = 6
+
+        wn = f_cutoff * 2 / 1000.0 # fc
+
+        b, a = signal.butter(N_ord, wn, 'low', analog=False)
+
+        s_filt = signal.lfilter(b, a, val)
+
+        return s_filt
 
     def every_10ms(i: int, t: float):
         '''This function is called every ms and performs the following:
